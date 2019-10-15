@@ -1,0 +1,200 @@
+  /**
+   * Creates a new TextTable with a single row from an existing {@link Collection} of {@link String}s.
+   * @param items The existing strings
+   * @return The new TextTable
+   */
+  public static TextTable fromRow(Collection<String> items) {
+    Table table = new Table();
+    ArrayList<String> row = new ArrayList<>(items);
+    table.items.add(row);
+    table.width = row.size();
+    return table;
+  }
+  
+  /**
+   * Creates a new TextTable with a single column from an existing {@link Collection} of {@link String}s.
+   * @param items The existing strings
+   * @return The new TextTable
+   */
+  public static TextTable fromColumn(Collection<String> items) {
+    Table table = new Table();
+    for (String str : items) {
+      ArrayList<String> row = new ArrayList<>();
+      row.add(str);
+      table.items.add(row);
+    }
+    // Even if the column contains no items, it still exists.
+    table.width = 1;
+    return table;
+  }
+  
+  /**
+   * Removes empty rows from the bottom and empty columns from the right.
+   * <p>
+   * A table with no contents has all rows and columns removed.
+   */
+  public void trim() {
+    for (int r = items.size(); r == items.size(); ) {
+      r--; // set r to final row's number
+      int c = 0;
+      ArrayList<String> row = items.get(r);
+      
+      // Make sure the row is empty.
+      for (; c < width; c++) {
+        if (!row.get(c).isEmpty()) {
+          break;
+        }
+      }
+      
+      // If empty, remove it.
+      // If c == width, the loop processed all columns without breaking on a non-empty cell.
+      if (c == width) {
+        items.remove(r);
+      }
+      
+      // If the row was removed, r will now equal the height again.
+    }
+    
+    for (int c = width; c == width; ) {
+      c--;
+      int r = 0;
+      
+      // Make sure the column is empty.
+      for (; r < items.size(); r++) {
+        if (!items.get(r).get(c).isEmpty()) {
+          break;
+        }
+      }
+      
+      // If empty, remove it.
+      if (r == items.size()) {
+        for (r = 0; r < items.size(); r++) {
+          items.get(r).remove(c);
+        }
+        width -= 1;
+      }
+    }
+  }
+  
+  /**
+   * Resizes the TextTable to be at least this large. Does nothing to an axis that is already larger.
+   * 
+   * @param h The height to ensure.
+   * @param w The width to ensure.
+   */
+  public void resize(int h, int w) {
+    // Resize every existing row to the new column count, if necessary
+    if (width < w) {
+      for (int r = 0; r < items.size(); r++) {
+        ArrayList<String> row = items.get(r);
+        for (int c = width; c < w; c++) {
+          row.add("");
+        }
+      }
+      width = w;
+    }
+    
+    // Add new rows, if necessary
+    if (items.size() < h) {
+      for (int r = items.size(); r < h; r++) {
+        ArrayList<String> row = new ArrayList<>(width);
+        for (int c = 0; c < width; c++) {
+          row.add("");
+        }
+      }
+    }
+  }
+  
+  /**
+   * Returns true if the TextTable contains no values.
+   * <p>
+   * A Table having a non-zero height or width is still empty if its other axis has a size of 0.
+   * @return true if the table contains no values.
+   */
+  public boolean isEmpty() {
+    return area() == 0;
+  }
+  
+  /**
+   * Returns true if the TextTable contains the specified value.
+   * @param str The string to find in the table.
+   * @return true if the TextTable contains str.
+   * @throws NullPointerException If str is null.
+   */
+  public boolean contains(String str) {
+    if (str == null) {
+      throw new NullPointerException("Tables cannot contain null values.");
+    }
+    
+    for (ArrayList<String> row : items) {
+      if (row.contains(str)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Returns a CellReference pointing to the first instance of the given string in the table.
+   * <p>
+   * This method searches by rows first, then by columns within each row.
+   * <p>
+   * If the string isn't found, <code>CellReference.REF_ERROR</code> is returned.
+   * 
+   * @param str The string for which to search.
+   * @return The CellReference pointing to the fisrt instance of <code>str</code>, or <code>CellReference.REF_ERROR</code> if it's not found.
+   * @throws NullPointerException If <code>str</code> is null.
+   */
+  public CellReference indexOf(String str) {
+    if (str == null) {
+      throw new NullPointerException("Tables cannot contain null values.");
+    }
+    
+    for (int i = 0; i < items.size(); i++) {
+      ArrayList<String> row = items.get(i);
+          
+      if (row.contains(str)) {
+        return CellReference.of(i, row.indexOf(str));
+      }
+    }
+    
+    return CellReference.REF_ERROR;
+  }
+  
+  /**
+   * Returns a CellReference pointing to the first instance of the given string in the table.
+   * <p>
+   * This method searches by columns first, then by rows within each column.
+   * <p>
+   * If the string isn't found, <code>CellReference.REF_ERROR</code> is returned.
+   * 
+   * @param str The string for which to search.
+   * @return The CellReference pointing to the fisrt instance of <code>str</code>, or <code>CellReference.REF_ERROR</code> if it's not found.
+   * @throws NullPointerException If <code>str</code> is null.
+   */
+  public CellReference indexOfTransposed(String str) {
+    if (str == null) {
+      throw new NullPointerException("Tables cannot contain null values.");
+    }
+    
+    int colIndex = width;
+    int rowIndex = -1;
+    
+    for (int r = 0; r < items.size() && colIndex != 0; r++) {
+      for (int c = 0; c < colIndex; c++) {
+        if (items.get(r).get(c).equals(str)) {
+          colIndex = c;
+          rowIndex = r;
+        }
+      }
+    }
+    
+    if (rowIndex != -1) {
+      return CellReference.of(rowIndex, colIndex);
+    }
+    
+    return CellReference.REF_ERROR;
+  }
+  
+  
